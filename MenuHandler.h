@@ -1,10 +1,4 @@
-/*
- * Copyright (C) 2024 MegaKG.
- *
- * Licensed under the GPLV3 License.
- *
- */
-
+#pragma once
 #include "DisplayDriver.h"
 #include "BatteryUtils.h"
 #include "ColourMaps.h"
@@ -70,6 +64,7 @@ int awaitKeypress(){
 
 
 
+
 void batteryMenu(){
   char buffer[20];
   myDisplay.clearFB();
@@ -81,8 +76,12 @@ void batteryMenu(){
   }
   else {
     myDisplay.printAt(11, 11, "Battery Discharging", 0xf800);
+
     snprintf(buffer,20,"Battery:  %.2f V",readBatteryVoltage());
     myDisplay.printAt(10, 21, buffer, 0xf800);
+
+    snprintf(buffer,20,"Estimated:  %i %%",determineBatteryPercentage());
+    myDisplay.printAt(10, 31, buffer, 0xf800);
   }
   myDisplay.refresh();
 
@@ -92,8 +91,8 @@ void batteryMenu(){
 }
 
 void colourMenu(){
-  int selected = 0;
-  int maxMenu = numberOfColourMaps;
+  unsigned int selected = 0;
+  unsigned int maxMenu = numberOfColourMaps;
 
   int button;
   uint16_t colour = 0xffff;
@@ -168,20 +167,51 @@ void configSaveMenu(){
   }
 }
 
+
+uint8_t backlightPercentage = 100;
+void brightnessMenu(){
+  char buffer[20];
+  char keypress;
+  while (1){
+    myDisplay.clearFB();
+    myDisplay.printAt(1, 1, "Set Brightness:", 0xffff);
+    snprintf(buffer,20,"Backlight:  %i %%",backlightPercentage);
+    myDisplay.printAt(11, 11, buffer, 0xffff);
+    myDisplay.printAt(1, 120, "Use Up/Down Keys", 0xffff);
+    myDisplay.refresh();
+
+    keypress = awaitKeypress();
+    if (keypress == BackButton){
+      break;
+    }
+    else if (keypress == UpButton){
+      backlightPercentage += 10;
+      backlightPercentage = (backlightPercentage > 100) ? 100 : backlightPercentage;
+    }
+    else if (keypress == DownButton){
+      backlightPercentage -= 10;
+      backlightPercentage = (backlightPercentage < 10) ? 10 : backlightPercentage;
+    }
+    myDisplay.setBacklightPercentage(backlightPercentage);
+  }
+  myDisplay.setBacklightPercentage(backlightPercentage);
+}
+
 void mainMenu(){
-  int selected = 0;
-  int maxMenu = 6;
+  unsigned int selected = 0;
+  unsigned int maxMenu = 7;
 
   int button;
   while (1){
     myDisplay.clearFB();
     myDisplay.printAt(1, 1, "Main Menu:", 0xffff);
     myDisplay.printAt(11, 11, "Battery Status", 0xffff);
-    myDisplay.printAt(11, 21, "Colour Map", 0xffff);
-    myDisplay.printAt(11, 31, "Take Photo", 0xffff);
-    myDisplay.printAt(11, 41, "Take Sample", 0xffff);
-    myDisplay.printAt(11, 51, "Save Config", 0xffff);
-    myDisplay.printAt(11, 61, "Firmware Update", 0xffff);
+    myDisplay.printAt(11, 21, "Brightness", 0xffff);
+    myDisplay.printAt(11, 31, "Colour Map", 0xffff);
+    myDisplay.printAt(11, 41, "Take Photo", 0xffff);
+    myDisplay.printAt(11, 51, "Take Sample", 0xffff);
+    myDisplay.printAt(11, 61, "Save Config", 0xffff);
+    myDisplay.printAt(11, 71, "Firmware Update", 0xffff);
 
     //Place the marker
     myDisplay.printAt(1,11+(10*(selected%maxMenu)), ">", 0xffff);
@@ -207,18 +237,21 @@ void mainMenu(){
             batteryMenu();
             break;
           case 1:
-            colourMenu();
+            brightnessMenu();
             break;
           case 2:
-            photoMenu();
+            colourMenu();
             break;
           case 3:
-            sampleMenu();
+            photoMenu();
             break;
           case 4:
-            configSaveMenu();
+            sampleMenu();
             break;
           case 5:
+            configSaveMenu();
+            break;
+          case 6:
             rp2040.rebootToBootloader();
             break;
         };

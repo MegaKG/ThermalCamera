@@ -1,16 +1,10 @@
-/*
- * Copyright (C) 2024 MegaKG.
- *
- * Licensed under the GPLV3 License.
- *
- */
-
 #pragma once
 #include "ThermalCamera.h"
 #include "DisplayDriver.h"
 #include "MathFunctions.h"
 #include "ColourMaps.h"
 #include "FileUtilities.h"
+#include "BatteryUtils.h"
 
 #define I2C_SCL 1
 #define I2C_SDA 0
@@ -20,13 +14,16 @@
 #define SPI_RST 7
 #define SPI_SDI 3
 #define SPI_SCK 2
+#define Backlight 27
 
 #define height 24
 #define width 32
 #define imScale 4
+#define imYOffset 10
 
 ThermalCamera myCamera;
 Display myDisplay;
+
 
 uint16_t rawImageMap[24][32];
 uint16_t frameBuffer[height*imScale][width*imScale];
@@ -78,7 +75,7 @@ void _scaleMap(float min, float max){
 void _imageToDisplay(){
   for (uint16_t y = 0; y < height*imScale; y++){
     for (uint16_t x = 0; x < width*imScale; x++){
-      myDisplay.setPixel(x, y, frameBuffer[y][x]);
+      myDisplay.setPixel(x, y+imYOffset, frameBuffer[y][x]);
     }
   }
 }
@@ -126,19 +123,33 @@ void _bilinearProc(){
 void _statusToDisplay(float min, float max, float emissivity){
   char buffer[20];
   snprintf(buffer,20,"Min: %.2f C ",min);
-  myDisplay.printAt(10, 100, buffer, 0x001f);
+  myDisplay.printAt(4, 110, buffer, 0x001f);
   snprintf(buffer,20,"Max: %.2f C ",max);
-  myDisplay.printAt(10, 110, buffer, 0xf800);
+  myDisplay.printAt(4, 120, buffer, 0xf800);
+
   snprintf(buffer,20,"e: %.2f ",emissivity);
-  myDisplay.printAt(10, 120, buffer, 0xffff);
-  
+  myDisplay.printAt(4, 2, buffer, 0xffff);
+
+  uint8_t batteryPercentage = readCachedBatteryPercentage();
+  snprintf(buffer,20,"Bat: %i %%",batteryPercentage);
+  uint16_t colour = 0xffff;
+  if (batteryPercentage >= 75){
+    colour = 0x07e0;
+  }
+  else if ((batteryPercentage < 75) && (batteryPercentage > 25)) {
+    colour = 0xffe0;
+  }
+  else {
+    colour = 0xf800;
+  }
+  myDisplay.printAt(70, 2, buffer, colour); 
 }
 
 void initVideo(){
   //32x24 thermal camera
   //128x128 screen
   myCamera = ThermalCamera(I2C_SCL,I2C_SDA);
-  myDisplay = Display(SPI_CS, SPI_RST, SPI_RS, SPI_SCK, SPI_SDI);
+  myDisplay = Display(SPI_CS, SPI_RST, SPI_RS, SPI_SCK, SPI_SDI, Backlight);
 
   initColours();
   initFilesystem();

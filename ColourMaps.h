@@ -1,10 +1,3 @@
-/*
- * Copyright (C) 2024 MegaKG.
- *
- * Licensed under the GPLV3 License.
- *
- */
-
 #pragma once
 #define numberOfColourMaps 9
 #define totalColourLength 8+2+4+2+11+5+3+5+5

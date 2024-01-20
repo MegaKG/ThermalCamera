@@ -1,10 +1,3 @@
-/*
- * Copyright (C) 2024 MegaKG.
- *
- * Licensed under the GPLV3 License.
- *
- */
-
 #include <Adafruit_GFX.h>    
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
@@ -16,12 +9,14 @@ class Display {
     Adafruit_ST7735* tft = NULL;
     GFXcanvas16* frameBuffer = NULL; 
 
+    int BacklightPin;
+
   public:
     Display(){
 
     }
 
-    Display(int CS, int RST, int RS, int SCK, int SDI){
+    Display(int CS, int RST, int RS, int SCK, int SDI, int BackLight){
       SPI.setCS(CS);
       SPI.setSCK(SCK);
       SPI.setTX(SDI);
@@ -36,6 +31,14 @@ class Display {
       tft->setTextColor(ST77XX_WHITE);
       tft->setTextWrap(true);
       tft->print("Ready");
+
+      BacklightPin = BackLight;
+      pinMode(BacklightPin,OUTPUT);
+      analogWrite(BacklightPin,255);
+    }
+
+    void setBacklightPercentage(uint8_t percent){
+      analogWrite(BacklightPin,map(percent,0,100,0,255));
     }
 
     void printAt(int x, int y, char* text, uint16_t colour){

@@ -1,10 +1,4 @@
-/*
- * Copyright (C) 2024 MegaKG.
- *
- * Licensed under the GPLV3 License.
- *
- */
-
+#pragma once
 #include "pico/stdlib.h"
 #include "hardware/interp.h"
 

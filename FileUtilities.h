@@ -1,10 +1,3 @@
-/*
- * Copyright (C) 2024 MegaKG.
- *
- * Licensed under the GPLV3 License.
- *
- */
-
 #pragma once
 #include <LittleFS.h>
 #include <SingleFileDrive.h>
