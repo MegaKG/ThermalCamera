@@ -5,6 +5,7 @@
 #include "MenuHandler.h"
 #include "BatteryUtils.h"
 #include "ConfigSaveLoad.h"
+#include "FileUtilities.h"
 
 extern Display myDisplay;
 extern ThermalCamera myCamera;
@@ -21,6 +22,7 @@ void checkBattery(){
 }
 
 void setup() {
+  initFilesystem();
   initVideo();
   myDisplay.setBacklightPercentage(255);
   initMenu();
@@ -61,6 +63,11 @@ void loop() {
       emiss = (emiss < 0) ? 0 : emiss;
       myCamera.setEmissivity(emiss);
       break;
+
+    case BackButton:
+      toggleDisplayMode();
+      break;
+      
     default:
       ;
   };

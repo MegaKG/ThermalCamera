@@ -25,9 +25,12 @@ ThermalCamera myCamera;
 Display myDisplay;
 
 
-uint16_t rawImageMap[24][32];
+uint16_t rawImageMap[height][width];
 uint16_t frameBuffer[height*imScale][width*imScale];
 
+int displayMode = 0;
+float runningMax = 0;
+float runningMin = 0;
 
 uint16_t _colourMap(uint16_t pixValue, uint8_t selectedMap){
   int index;
@@ -46,10 +49,18 @@ uint16_t _colourMap(uint16_t pixValue, uint8_t selectedMap){
 }
 
 
-void _findMinMax(float* min, float* max){
+void _findMinMaxAvg(float* min, float* max, float* avg){
   //Find Minimum and Maxmimum
   *min = myCamera.getPixel(0);
   *max = myCamera.getPixel(0);
+  *avg = 0;
+
+  if (*max > runningMax){
+    runningMax = *max;
+  }
+  if (*min < runningMin){
+    runningMin = *min;
+  }
   
 
   for (uint16_t i = 0; i < (height*width); i++){
@@ -59,14 +70,21 @@ void _findMinMax(float* min, float* max){
     if (myCamera.getPixel(i) > *max){
       *max = myCamera.getPixel(i);
     }
+    if (displayMode == 1){
+      *avg += myCamera.getPixel(i);
+    }
   }
+  if (displayMode == 1){
+    *avg = *avg / (height*width);
+  }
+  
 }
 
-void _scaleMap(float min, float max){
-  if ((max - min) > 0){
+void _scaleMap(float lmin, float lmax){
+  if ((lmax - lmin) > 0){
     for (uint8_t y = 0; y < height; y++){
       for (uint8_t x = 0; x < width; x++){
-        rawImageMap[y][x] = (uint16_t)round(65535*((myCamera.getPixel(x,y)-min)/(max-min)));
+        rawImageMap[y][x] = (uint16_t)round(65535*((myCamera.getPixel(x,y)-lmin)/(lmax-lmin)));
       }
     }
   }  
@@ -92,7 +110,6 @@ void _bilinearProc(){
   uint16_t x1,x2,y1,y2;
 
   
-  //for (uint8_t y = (core * ((height-2)/coreCount))+1; y < (((core+1) * ((height-2)/coreCount)))+1; y++){
   for (uint16_t y = 1; y < height; y++){
     for (uint16_t x = 1; x < width; x++){
       for (uint8_t yy = 0; yy < scaleFactor; yy++){
@@ -109,10 +126,7 @@ void _bilinearProc(){
             xx,yy
           );
           
-          //pixValue = (uint8_t)round(rawImageMap[y][x]);
-          frameBuffer[(y*scaleFactor)+yy][(x*scaleFactor)+xx] = _colourMap(pixValue,selectedColourMap);
-          
-          
+          frameBuffer[(y*scaleFactor)+yy][(x*scaleFactor)+xx] = _colourMap(pixValue,selectedColourMap); 
         }
       }
     }
@@ -120,16 +134,81 @@ void _bilinearProc(){
   
 }
 
-void _statusToDisplay(float min, float max, float emissivity){
-  char buffer[20];
-  snprintf(buffer,20,"Min: %.2f C ",min);
-  myDisplay.printAt(4, 110, buffer, 0x001f);
-  snprintf(buffer,20,"Max: %.2f C ",max);
-  myDisplay.printAt(4, 120, buffer, 0xf800);
 
+
+void resetMinMax(){
+  myCamera.takeReading();
+  float average;
+  _findMinMaxAvg(&runningMin,&runningMax,&average);
+
+}
+
+void toggleDisplayMode(){
+  displayMode += 1;
+  if (displayMode > 2){
+    displayMode = 0;
+  }
+
+  resetMinMax();
+  
+}
+
+void _drawCrosshair(){
+  //Horizontal Lines
+  for (uint16_t y = ((height*imScale)/2); y < ((height*imScale)/2)+1; y++){
+    for (uint16_t x = ((width*imScale)/2)-3; x < ((width*imScale)/2)+4; x++){
+      frameBuffer[y][x] = 0xffff ^ frameBuffer[y][x];
+    }
+  }
+
+  //Vertical Lines
+  for (uint16_t x = ((width*imScale)/2); x < ((width*imScale)/2)+1; x++){
+    for (uint16_t y = ((height*imScale)/2)-3; y < ((height*imScale)/2)+4; y++){
+      frameBuffer[y][x] = 0xffff ^ frameBuffer[y][x];
+    }
+  }
+}
+
+void _statusToDisplay(float min, float max, float avg, float emissivity){
+  char buffer[20];
+
+  
+
+  //The stats depending on mode
+  switch (displayMode){
+    //Min Max
+    case 0:
+      snprintf(buffer,20,"Min: %.2f C ",min);
+      myDisplay.printAt(4, 110, buffer, 0x001f);
+      snprintf(buffer,20,"Max: %.2f C ",max);
+      myDisplay.printAt(4, 120, buffer, 0xf800);
+      break;
+
+    //Crosshair
+    case 1:
+      snprintf(buffer,20,"Target: %.2f C ",myCamera.getPixel(width/2,height/2));
+      myDisplay.printAt(4, 110, buffer, 0x07e0);
+      snprintf(buffer,20,"Avg: %.2f C ",avg);
+      myDisplay.printAt(4, 120, buffer, 0xffff);
+      break;
+
+    //Absolutes
+    case 2:
+      snprintf(buffer,20,"Abs Min: %.2f C ",runningMin);
+      myDisplay.printAt(4, 110, buffer, 0x001f);
+      snprintf(buffer,20,"Abs Max: %.2f C ",runningMax);
+      myDisplay.printAt(4, 120, buffer, 0xf800);
+      break;
+  };
+    
+    
+
+
+  //Show the Emissivity
   snprintf(buffer,20,"e: %.2f ",emissivity);
   myDisplay.printAt(4, 2, buffer, 0xffff);
 
+  //And the battery percentag
   uint8_t batteryPercentage = readCachedBatteryPercentage();
   snprintf(buffer,20,"Bat: %i %%",batteryPercentage);
   uint16_t colour = 0xffff;
@@ -152,19 +231,29 @@ void initVideo(){
   myDisplay = Display(SPI_CS, SPI_RST, SPI_RS, SPI_SCK, SPI_SDI, Backlight);
 
   initColours();
-  initFilesystem();
+  
+
+
+  resetMinMax();
 }
 
 
 
 void videoFrame(){
-  float minTemp, maxTemp;
+  float minTemp, maxTemp, avgTemp;
   myCamera.takeReading();
-  _findMinMax(&minTemp,&maxTemp);
+  _findMinMaxAvg(&minTemp,&maxTemp,&avgTemp);
+
+
   _scaleMap(minTemp,maxTemp);
+
+  
   myDisplay.clearFB();
   _bilinearProc();
-  _statusToDisplay(minTemp,maxTemp,myCamera.getEmissivity());
+  _statusToDisplay(minTemp,maxTemp,avgTemp,myCamera.getEmissivity());
+  if (displayMode == 1){
+    _drawCrosshair();
+  }
   _imageToDisplay();
   myDisplay.refresh();
 }
@@ -176,15 +265,20 @@ void lowBatteryImage(){
   myDisplay.refresh();
 }
 
-void takePhoto(){
+bool takePhoto(){
   //Take the Sample
   videoFrame();
+
+  if (!canSaveImage()){
+    return 0;
+  }
 
   noInterrupts();
   File myFile = openImage();
 
   //Write as netpbm
   myFile.printf("P6\n%i %i\n255\n",width*imScale,height*imScale);
+  //myFile.printf("P3\n%i %i\n255\n",width*imScale,height*imScale);
 
   //Dump each pixel
   uint8_t r;
@@ -196,18 +290,24 @@ void takePhoto(){
       g = ((frameBuffer[y][x] >> 5) & 0xff) << 2;
       b = ((frameBuffer[y][x] >> 0) & 0xff) << 3;
       myFile.printf("%c%c%c",r,g,b);
+      //myFile.printf("%i %i %i ",r,g,b);
     }
   }
 
   closeFile(myFile);
   interrupts();
 
-  makeImageVisible();
+  updateFS();
+  return 1;
 }
 
-void takeSample(){
+bool takeSample(){
   //Take the Sample
   videoFrame();
+
+  if (!canSaveImage()){
+    return 0;
+  }
 
   noInterrupts();
   File myFile = openSample();
@@ -229,5 +329,6 @@ void takeSample(){
   closeFile(myFile);
   interrupts();
 
-  makeSampleVisible();
+  updateFS();
+  return 1;
 }

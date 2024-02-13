@@ -9,6 +9,7 @@ extern Display myDisplay;
 extern uint8_t backlightPercentage;
 extern ThermalCamera myCamera;
 extern int selectedColourMap;
+extern int displayMode;
 
 void saveConfig(){
   float emissivity = myCamera.getEmissivity();
@@ -18,6 +19,7 @@ void saveConfig(){
   configFile.printf("%f\n",emissivity);
   configFile.printf("%i\n",colourMapSel);
   configFile.printf("%i\n",backlightPercentage);
+  configFile.printf("%i\n",displayMode);
   closeFile(configFile);
 }
 
@@ -31,6 +33,12 @@ void loadConfig(){
       backlightPercentage = 100;
     }
     myDisplay.setBacklightPercentage(backlightPercentage);
+
+    displayMode = configFile.parseInt();
+    if (displayMode < 0){
+      displayMode = 0;
+    }
+
     closeFile(configFile);
   }
   

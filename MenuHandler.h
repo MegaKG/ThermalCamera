@@ -135,37 +135,56 @@ void colourMenu(){
 }
 
 void photoMenu(){
-  takePhoto();
+  if (takePhoto()){
+    myDisplay.clearFB();
+    myDisplay.printAt(1, 1, "Photo Saved", Display::convertPixel(0,255,0));
+    myDisplay.refresh();
+  }
+  else {
+    myDisplay.clearFB();
+    myDisplay.printAt(10, 10, "No Space", Display::convertPixel(255,0,0));
+    myDisplay.printAt(10, 20, "Clear Disk", Display::convertPixel(255,0,0));
+    myDisplay.refresh();
+  }
+
+  delay(2000);
+}
+
+void formatMenu(){
+  clearFilesystem();
   myDisplay.clearFB();
-  myDisplay.printAt(1, 1, "Photo Saved", 0xffff);
+  myDisplay.printAt(1, 1, "System Data", Display::convertPixel(255,0,0));
+  myDisplay.printAt(1, 11, "Cleared", Display::convertPixel(255,0,0));
   myDisplay.refresh();
 
-  while (awaitKeypress() != BackButton){
-    ;
-  }
+  delay(2000);
 }
 
 void sampleMenu(){
-  takeSample();
-  myDisplay.clearFB();
-  myDisplay.printAt(1, 1, "Sample Saved", 0xffff);
-  myDisplay.refresh();
-
-  while (awaitKeypress() != BackButton){
-    ;
+  if (takeSample()){
+    myDisplay.clearFB();
+    myDisplay.printAt(1, 1, "Sample Saved", Display::convertPixel(0,255,0));
+    myDisplay.refresh();
   }
+  else {
+    myDisplay.clearFB();
+    myDisplay.printAt(10, 10, "No Space", Display::convertPixel(255,0,0));
+    myDisplay.printAt(10, 20, "Clear Disk", Display::convertPixel(255,0,0));
+    myDisplay.refresh();
+  }
+
+  delay(2000);
 }
 
 void configSaveMenu(){
   saveConfig();
   myDisplay.clearFB();
-  myDisplay.printAt(1, 1, "Config Saved", 0xffff);
+  myDisplay.printAt(1, 1, "Config Saved", Display::convertPixel(0,255,0));
   myDisplay.refresh();
 
-  while (awaitKeypress() != BackButton){
-    ;
-  }
+  delay(2000);
 }
+
 
 
 uint8_t backlightPercentage = 100;
@@ -199,7 +218,7 @@ void brightnessMenu(){
 
 void mainMenu(){
   unsigned int selected = 0;
-  unsigned int maxMenu = 7;
+  unsigned int maxMenu = 8;
 
   int button;
   while (1){
@@ -212,6 +231,7 @@ void mainMenu(){
     myDisplay.printAt(11, 51, "Take Sample", 0xffff);
     myDisplay.printAt(11, 61, "Save Config", 0xffff);
     myDisplay.printAt(11, 71, "Firmware Update", 0xffff);
+    myDisplay.printAt(11, 81, "Format FS", 0xffff);
 
     //Place the marker
     myDisplay.printAt(1,11+(10*(selected%maxMenu)), ">", 0xffff);
@@ -253,6 +273,9 @@ void mainMenu(){
             break;
           case 6:
             rp2040.rebootToBootloader();
+            break;
+          case 7:
+            formatMenu();
             break;
         };
         break;

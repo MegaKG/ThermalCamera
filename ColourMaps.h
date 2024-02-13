@@ -1,7 +1,7 @@
 #pragma once
 #define numberOfColourMaps 9
-#define totalColourLength 8+2+4+2+11+5+3+5+5
-uint8_t mapLengths[numberOfColourMaps] = {8, 2, 4, 2, 11, 5, 3, 5, 5};
+#define totalColourLength 8+2+4+2+11+5+5+5+5
+uint8_t mapLengths[numberOfColourMaps] = {8, 2, 4, 2, 11, 5, 5, 5, 5};
 
 const char* ColourMapLabels[numberOfColourMaps] = {
   "Default",
@@ -22,8 +22,8 @@ uint8_t _colours[totalColourLength][3] = {
   {0,0,0},
   {0,0,255},
   {0,255,0},
-  {255,127,0},
   {255,255,0},
+  {255,127,0},
   {255,0,0},
   {255,0,255},
   {255,255,255},
@@ -64,7 +64,9 @@ uint8_t _colours[totalColourLength][3] = {
 
   //Halo
   {0,0,0},
+  {0,0,0},
   {0,255,0},
+  {0,0,0},
   {0,0,0},
 
   //Heated Metal
@@ -129,7 +131,9 @@ uint16_t _colourPoints[totalColourLength] = {
 
   //Halo
   0,
-  32768,
+  39000,
+  32000,
+  35000,
   65535,
 
   //Heated Metal

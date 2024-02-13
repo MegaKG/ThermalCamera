@@ -12,16 +12,16 @@
 #define batteryLevelCount 4
 const uint8_t batteryLevels[batteryLevelCount] = {
   100,
+  100,
   90,
-  12,
   0
 };
 
 const float batteryVoltages[batteryLevelCount] = {
   4.20,
   4.00,
-  3.6,
-  3.3
+  3.90,
+  3.6
 };
 
 

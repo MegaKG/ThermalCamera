@@ -41,8 +41,12 @@ class ThermalCamera {
       Wire.setClock(400000); // Set 400khz for config
 
       MLX90640_SetRefreshRate(MLX90640_address, 0x05);
+      //MLX90640_SetInterleavedMode(MLX90640_address);
+      //MLX90640_SetChessMode(MLX90640_address);
 
       loadParam();
+
+      //
 
       Wire.setClock(1000000L); // Set 1MHZ for reading
     }
